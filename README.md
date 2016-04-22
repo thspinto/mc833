@@ -1,2 +1,2 @@
 # MC833
-Tarefas da matéria MC833: Laborátoria de Redes.
+Tarefas da matéria MC833: Laboratório de Redes.
