@@ -15,7 +15,7 @@ int main()
 	struct sockaddr_in sin;
 	char buf[MAX_LINE];
 	int len;
-	int s, new_s;
+	int s, new_s, pid;
 
 	/* build address data structure */
 	bzero((char *)&sin, sizeof(sin));
@@ -40,9 +40,20 @@ int main()
 			perror("simplex-talk: accept");
 			exit(1);
 		}
-		while (len = recv(new_s, buf, sizeof(buf), 0)) {
-			fputs(buf, stdout);
-			send(new_s, buf, len, 0);
+		pid = fork();
+
+		if (pid < 0) {
+			 perror("simplex-talk: fork");
+			 exit(1);
+		}
+		if ( pid == 0) {
+			close(s);
+			while (len = recv(new_s, buf, sizeof(buf), 0)) {
+				fputs(buf, stdout);
+				send(new_s, buf, len, 0);
+			}
+			close(new_s);
+			exit(0);
 		}
 		close(new_s);
 	}
