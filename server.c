@@ -5,6 +5,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <arpa/inet.h>
+
 
 #define SERVER_PORT 31472
 #define MAX_PENDING 5
@@ -12,7 +14,7 @@
 
 int main()
 {
-	struct sockaddr_in sin;
+	struct sockaddr_in sin, addr;
 	char buf[MAX_LINE];
 	int len;
 	int s, new_s, pid;
@@ -40,13 +42,19 @@ int main()
 			perror("simplex-talk: accept");
 			exit(1);
 		}
-		pid = fork();
 
+		len = sizeof(addr);
+		if(getpeername(new_s, &addr, &len) < 0){
+			perror("simplex-talk: getsockname");
+		}
+		printf("Socket %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+
+		pid = fork();
 		if (pid < 0) {
 			 perror("simplex-talk: fork");
 			 exit(1);
 		}
-		if ( pid == 0) {
+		if (pid == 0) {
 			close(s);
 			while (len = recv(new_s, buf, sizeof(buf), 0)) {
 				fputs(buf, stdout);

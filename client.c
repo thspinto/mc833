@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <arpa/inet.h>
 
 #define SERVER_PORT 31472
 #define MAX_LINE 256
@@ -13,7 +14,7 @@ int main(int argc, char * argv[])
 {
 	FILE *fp;
 	struct hostent *hp;
-	struct sockaddr_in sin;
+	struct sockaddr_in sin, addr;
 	char *host;
 	char buf[MAX_LINE];
 	int s;
@@ -44,11 +45,18 @@ int main(int argc, char * argv[])
 		perror("simplex-talk: socket");
 		exit(1);
 	}
+
 	if (connect(s, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
 		perror("simplex-talk: connect");
 		close(s);
 		exit(1);
 	}
+
+	len = sizeof(addr);
+	if(getsockname(s, &addr, &len) < 0){
+		perror("simplex-talk: getsockname");
+	}
+	printf("Socket %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
 	/* main loop: get and send lines of text */
 	while (fgets(buf, sizeof(buf), stdin)) {
