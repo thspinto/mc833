@@ -13,10 +13,10 @@ int main(int argc, char * argv[])
 {
 	FILE *fp;
 	struct hostent *hp;
-	struct sockaddr_in sin;
+	struct sockaddr_in servaddr, cliaddr;
 	char *host;
 	char buf[MAX_LINE];
-	int s, len, recvlen, addr_len = sizeof(sin);
+	int s, len, recvlen, addr_len = sizeof(servaddr);
 	if (argc==2) {
 		host = argv[1];
 	}
@@ -33,10 +33,10 @@ int main(int argc, char * argv[])
 	}
 
 	/* build address data structure */
-	bzero((char *)&sin, sizeof(sin));
-	sin.sin_family = AF_INET;
-	bcopy(hp->h_addr, (char *)&sin.sin_addr, hp->h_length);
-	sin.sin_port = htons(SERVER_PORT);
+	bzero((char *)&servaddr, sizeof(servaddr));
+	servaddr.sin_family = AF_INET;
+	bcopy(hp->h_addr, (char *)&servaddr.sin_addr, hp->h_length);
+	servaddr.sin_port = htons(SERVER_PORT);
 
 	/* active open */
 	if ((s = socket(PF_INET, SOCK_DGRAM, 0)) < 0) {
@@ -48,11 +48,15 @@ int main(int argc, char * argv[])
 	while (fgets(buf, sizeof(buf), stdin)) {
 		buf[MAX_LINE-1] = '\0';
 		len = strlen(buf) + 1;
-		sendto(s, buf, len, 0, (struct sockaddr *)&sin, sizeof(sin));
-		recvlen = recvfrom(s, buf, MAX_LINE, 0, (struct sockaddr *)&sin, &addr_len);
-		if (recvlen > 0) {
-						buf[recvlen] = 0;
-						printf("received message: %s", buf);
+		sendto(s, buf, len, 0, (struct sockaddr *)&servaddr, sizeof(servaddr));
+		while(1){
+			recvlen = recvfrom(s, buf, MAX_LINE, 0, (struct sockaddr *)&cliaddr, &addr_len);
+			if (recvlen > 0 && (servaddr.sin_addr.s_addr == cliaddr.sin_addr.s_addr &&
+																		servaddr.sin_port == cliaddr.sin_port)) {
+							buf[recvlen] = 0;
+							printf("received message: %s", buf);
+							break;
+			}
 		}
 	}
 }
