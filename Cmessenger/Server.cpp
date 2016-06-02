@@ -1,11 +1,16 @@
-//
-// Created by Thiago Pinto on 5/27/16.
-//
-
 #include "Server.h"
 #include "easylogging++.h"
 
 int Server::run(int port) {
+    Server::port = port;
+    int listenfd = startListen();
+
+    Server::clientfdList.push_back(listenfd);
+
+    return 0;
+}
+
+int Server::startListen() {
     int	listenfd;
     struct sockaddr_in servaddr;
 
@@ -17,7 +22,7 @@ int Server::run(int port) {
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servaddr.sin_port = htons(port);
+    servaddr.sin_port = htons(Server::port);
 
     if (bind(listenfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0)  {
         perror("bind error");
@@ -30,12 +35,12 @@ int Server::run(int port) {
         close(listenfd);
         return 1;
     }
-
-    Server::printLocalAddress(port);
+    Server::printLocalAddress();
+    return listenfd;
 }
 
 // Referência: http://stackoverflow.com/questions/212528/get-the-ip-address-of-the-machine
-int Server::printLocalAddress(int port) {
+void Server::printLocalAddress() {
     struct ifaddrs * ifAddrStruct=NULL;
     struct ifaddrs * ifa=NULL;
     void * tmpAddrPtr=NULL;
@@ -50,14 +55,12 @@ int Server::printLocalAddress(int port) {
             tmpAddrPtr=&((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
             char addressBuffer[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, tmpAddrPtr, addressBuffer, INET_ADDRSTRLEN);
-            LOG(INFO) <<  ifa->ifa_name << ": " << addressBuffer << ":" << port;
+            LOG(INFO) <<  ifa->ifa_name << ": " << addressBuffer << ":" << Server::port;
         }
     }
     if (ifAddrStruct!=NULL) freeifaddrs(ifAddrStruct);
 
     LOG(INFO) <<  "####### Server IPs ######## \n";
-
-    return 0;
 }
 
 

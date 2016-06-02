@@ -1,7 +1,3 @@
-//
-// Created by Thiago Pinto on 5/27/16.
-//
-
 #ifndef CMESSENGER_CLIENT_H
 #define CMESSENGER_CLIENT_H
 
@@ -12,7 +8,7 @@ class Group;
 class Client {
 
 public:
-    int soketFD;
+    int soketfd;
     int id;
     std::string user;
     std::list<Group*> groups;

@@ -1,7 +1,3 @@
-//
-// Created by Thiago Pinto on 5/27/16.
-//
-
 #ifndef CMESSENGER_SERVER_H
 #define CMESSENGER_SERVER_H
 
@@ -25,8 +21,11 @@
 class Server {
     std::list<Group> groupList;
     std::list<Client> clientList;
+    std::list<int> clientfdList;
     std::queue<Message> messageQueue;
+    std::map<int,Message>incompleteMessageMap;
     std::map<int, Client> connectedClientMap;
+    int port;
     enum ServerAction {
         PENDING_INPUT,
         PARCE_REQ,
@@ -49,12 +48,12 @@ class Server {
 
     /*
      * Pega o cliente associado ao file descriptor do socket. Se não houver um, a função retorna um novo cliente com
-     * apenas o campo socketFD setado.
+     * apenas o campo socketfd setado.
      *
-     * @param socketFD: file descripor do socket
+     * @param socketfd: file descripor do socket
      * @return cliente connectado àquele socket
      */
-    Client getClient(int socketFD);
+    Client getClient(int socketfd);
 
     /*
      * Chama a função adequada para tratar o comando recebido do cliente.
@@ -67,10 +66,13 @@ class Server {
 
     /*
      * Imprime os endereços de IP locais
-     *
-     * @return 0 se sucesso
      */
-    int printLocalAddress(int port);
+    void printLocalAddress();
+
+    /*
+    * Faz o bind e o listen.
+    */
+    int startListen();
 
 public:
     /*

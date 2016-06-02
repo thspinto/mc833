@@ -1,7 +1,3 @@
-//
-// Created by Thiago Pinto on 5/27/16.
-//
-
 #ifndef CMESSENGER_MESSAGE_H
 #define CMESSENGER_MESSAGE_H
 
