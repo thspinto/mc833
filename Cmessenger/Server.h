@@ -17,11 +17,11 @@
 #include <arpa/inet.h>
 
 #define LISTENQ 5
+#define MAXLINE 300
 
 class Server {
     std::list<Group> groupList;
     std::list<Client> clientList;
-    std::list<int> clientfdList;
     std::queue<Message> messageQueue;
     std::map<int,Message>incompleteMessageMap;
     std::map<int, Client> connectedClientMap;
@@ -70,9 +70,14 @@ class Server {
     void printLocalAddress();
 
     /*
-    * Faz o bind e o listen.
-    */
+     * Faz o bind e o listen.
+     */
     int startListen();
+
+    /*
+     * Recebe e trata informações do socket.
+     */
+    void selectLoop(int listenfd);
 
 public:
     /*

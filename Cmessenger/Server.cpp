@@ -4,8 +4,7 @@
 int Server::run(int port) {
     Server::port = port;
     int listenfd = startListen();
-
-    Server::clientfdList.push_back(listenfd);
+    selectLoop(listenfd);
 
     return 0;
 }
@@ -38,6 +37,63 @@ int Server::startListen() {
     Server::printLocalAddress();
     return listenfd;
 }
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
+void Server::selectLoop(int listenfd) {
+    int maxfd, connfd, nready, n, sockfd;
+    fd_set rset, allset;
+    socklen_t clilen;
+    struct sockaddr_in	cliaddr;
+    char buf[MAXLINE];
+
+    maxfd = listenfd;
+    FD_ZERO(&allset);
+    FD_SET(listenfd, &allset);
+
+    while(1){
+        rset = allset;
+        nready = select(maxfd+1, &rset, NULL, NULL, NULL);
+
+        // Verifica se novo cliente conectou
+        if (FD_ISSET(listenfd, &rset)) {
+            clilen = sizeof(cliaddr);
+            connfd = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen);
+            connectedClientMap[connfd] = Client();
+
+            FD_SET(connfd, &allset);
+            if (connfd > maxfd)
+                maxfd = connfd;
+
+            if (--nready <= 0)
+                continue;
+        }
+
+        //Recebe mensagens dos clientes conectados
+        for(std::map<int, Client>::iterator it = connectedClientMap.begin();
+            it != connectedClientMap.end(); it++) {
+            if(connectedClientMap.size() < 1){
+                continue;
+            }
+
+            sockfd = it->first;
+            if (FD_ISSET(sockfd, &rset)) {
+                if ((n = read(sockfd, buf, MAXLINE)) == 0) {
+                    //Cliente desconectou
+                    close(sockfd);
+                    FD_CLR(sockfd, &allset);
+                    connectedClientMap.erase(it);
+                } else {
+                    send(sockfd, buf, n, 0);
+                    //TODO: Ler mensagem e colocar na fila
+                }
+                if (--nready <= 0)
+                    break; //sem clientes conectados
+            }
+        }
+    }
+}
+#pragma clang diagnostic pop
 
 // Referência: http://stackoverflow.com/questions/212528/get-the-ip-address-of-the-machine
 void Server::printLocalAddress() {
