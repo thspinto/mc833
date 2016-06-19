@@ -2,6 +2,9 @@
 #include "easylogging++.h"
 
 int Server::run(int port) {
+    //Cria cliente que representa o servidor
+    clientMap["Server"] = Client("Server", -1);
+
     Server::port = port;
     startListen();
     selectLoop();
@@ -56,7 +59,11 @@ void Server::selectLoop() {
         // Verifica se novo cliente conectou
         if (FD_ISSET(listenfd, &rset)) {
             clilen = sizeof cliaddr;
-            connfd = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen);
+            if((connfd = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen)) == -1){
+                perror("accept");
+                continue;
+            }
+
             connectedClientMap[connfd] = NULL;
             FD_SET(connfd, &allset);
             if (connfd > maxfd) {
@@ -145,6 +152,7 @@ void Server::executeCommand(Message::Action command, Message &message) {
             Server::conn(message);
             break;
         case Message::SEND :
+            Server::send(message);
             break;
         case Message::CREATEG :
             break;
@@ -155,11 +163,55 @@ void Server::executeCommand(Message::Action command, Message &message) {
         case Message::WHO :
             break;
     }
+    for(std::list<Message>::iterator it = messageQueue.begin(); it != messageQueue.end(); it++){
+        if(it->dest->socketfd != -1){
+            it->sendMessage();
+            messageQueue.erase(it);
+        }
+    }
+}
+
+void Server::send(Message &message) {
+    if(!verifyConnectedClient()){
+        return;
+    };
+
+    std::string destUser = message.parseCommandParameter();
+    message.origin = connectedClientMap[sockfd];
+    message.dest = verifyDestClient(destUser);
+    if(message.dest != NULL) {
+        messageQueue.push_back(message);
+    }
+}
+
+bool Server::verifyConnectedClient() {
+    if(connectedClientMap.find(sockfd)->second == NULL){
+        std::string status = "Usuário não identificado\n";
+        std::vector<char> statusBuffer(status.begin(), status.end());
+        Client *client = new Client("", sockfd);
+        Message message(&clientMap["Server"], client, statusBuffer);
+        message.sendMessage();
+        closeSocket(sockfd);
+        return false;
+    }
+    return true;
+}
+
+Client* Server::verifyDestClient(std::string destUser) {
+    if(clientMap.find(destUser) == clientMap.end()){
+        std::string status = "Usuário de destino não existente\n";
+        std::vector<char> statusBuffer(status.begin(), status.end());
+        Client *client = connectedClientMap[sockfd];
+        Message message(&clientMap["Server"], client, statusBuffer);
+        message.sendMessage();
+        return NULL;
+    }
+    return &clientMap.find(destUser)->second;
 }
 
 void Server::conn(Message &message) {
     std::string user(message.parseCommandParameter());
-    std::string status = "CONN Usuário conectado\n";
+    std::string status = "Usuário conectado\n";
     if(clientMap.find(user) == clientMap.end()){
         /* Novo usuário */
         clientMap[user] = Client(user, -1);
@@ -172,12 +224,12 @@ void Server::conn(Message &message) {
     } else {
         /* Usuário com um socket associado já*/
         connectedClientMap[sockfd] = new Client("", sockfd);
-        status = "CONN Usuário já conectado\n";
+        status = "Usuário já conectado\n";
     }
 
     Client* client = connectedClientMap[sockfd];
     message.setBuffer(status.data(), status.length());
-    message.origin = client;
+    message.origin = &clientMap["Server"];
     message.dest = client;
 
     /* Envia mensagem para usuário conectado */

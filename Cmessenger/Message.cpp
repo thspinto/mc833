@@ -46,5 +46,10 @@ void Message::setBuffer(const char* buffer, int size) {
 }
 
 bool Message::sendMessage() {
+    if(origin != NULL){
+        std::string user = origin->user;
+        user.append(" ");
+        send(dest->socketfd, user.data(), user.length(), 0);
+    }
     send(dest->socketfd, &buf[0], size, 0);
 }

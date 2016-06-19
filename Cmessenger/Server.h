@@ -67,7 +67,27 @@ class Server {
      *
      * @param message: mensagem recebida
      */
-    void conn(Message &message);
+    void conn(Message& message);
+
+    /*
+     * Popula os clientes de origem, destino, e envia a mensagem.
+     */
+    void send(Message& message);
+
+    /*
+     * Verifica se o cliente no socket atual foi identificado.
+     *
+     * @return true se socket estiver associado a um usuário
+     */
+    bool verifyConnectedClient();
+
+    /*
+     * Pega o cliente de destino. Se não existir envia mensagem de erro para cliente de origem.
+     *
+     * @param destUser: nome do usuário de destino.
+     * @return o Cliente se existir, NULL caso contrário.
+     */
+    Client* verifyDestClient(std::string destUser);
 
     /*
      * Fecha o socket e remove do mapa de clientes conectados.
