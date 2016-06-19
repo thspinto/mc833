@@ -12,8 +12,8 @@ public:
     int id;
     std::string user;
     std::list<Group*> groups;
-    Client (int socketfd): socketfd(socketfd) {}
-    Client () {}
+    Client(std::string user, int socketfd): user(user), socketfd(socketfd) {}
+    Client() {}
 };
 
 

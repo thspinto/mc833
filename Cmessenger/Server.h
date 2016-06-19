@@ -21,11 +21,13 @@
 #define MAXLINE 1024
 
 class Server {
-    std::list<Group> groupList;
-    std::list<Client> clientList;
+    int maxfd, sockfd, listenfd;
+    fd_set allset;
+    std::map<std::string, Group> groupList;
+    std::map<std::string, Client> clientMap;
     std::queue<Message> messageQueue;
-    std::map<int, Message>incompleteMessageMap;
-    std::map<int, Client*> connectedClientMap;
+    std::map<int, Message> incompleteMessageMap;
+    std::map<int, Client *> connectedClientMap;
     int port;
 
     /*
@@ -43,7 +45,7 @@ class Server {
      * @param command: o comando a ser executado
      * @param message: a mensagem que o comando tratará
      */
-    void executeCommand(Message::Action command, Message& message);
+    void executeCommand(Message::Action command, Message &message);
 
     /*
      * Imprime os endereços de IP locais
@@ -53,16 +55,28 @@ class Server {
     /*
      * Faz o bind e o listen.
      */
-    int startListen();
+    void startListen();
 
     /*
      * Recebe e trata informações do socket.
      */
-    void selectLoop(int listenfd);
+    void selectLoop();
+
+    /*
+     * Conexão de novo cliente. Cria o cliente.
+     *
+     * @param message: mensagem recebida
+     */
+    void conn(Message &message);
+
+    /*
+     * Fecha o socket e remove do mapa de clientes conectados.
+     */
+    void closeSocket(int sockfd);
 
 public:
     /*
-     * Inicia o servidor
+     * Inicia o servidor.
      *
      * @param port: Porta que irá escutar por novos clientes
      */

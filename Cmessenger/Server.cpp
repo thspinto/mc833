@@ -3,19 +3,18 @@
 
 int Server::run(int port) {
     Server::port = port;
-    int listenfd = startListen();
-    selectLoop(listenfd);
+    startListen();
+    selectLoop();
 
     return 0;
 }
 
-int Server::startListen() {
-    int	listenfd;
+void Server::startListen() {
     struct sockaddr_in servaddr;
 
     if ((listenfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         perror("socket error");
-        return 1;
+        exit(1);
     }
 
     bzero(&servaddr, sizeof(servaddr));
@@ -26,23 +25,22 @@ int Server::startListen() {
     if (bind(listenfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0)  {
         perror("bind error");
         close(listenfd);
-        return 1;
+        exit(1);
     }
 
     if (listen(listenfd, LISTENQ) < 0) {
         perror("listen error");
         close(listenfd);
-        return 1;
+        exit(1);
     }
     Server::printLocalAddress();
-    return listenfd;
 }
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
-void Server::selectLoop(int listenfd) {
-    int maxfd, connfd, nready, n, sockfd;
-    fd_set rset, allset;
+void Server::selectLoop() {
+    int connfd, nready, n;
+    fd_set rset;
     socklen_t clilen;
     struct sockaddr_in	cliaddr;
     std::vector<char> buf(MAXLINE);
@@ -60,14 +58,16 @@ void Server::selectLoop(int listenfd) {
             clilen = sizeof cliaddr;
             connfd = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen);
             connectedClientMap[connfd] = NULL;
-            LOG(INFO) << "Client Connected: " << inet_ntoa(cliaddr.sin_addr);
+            LOG(INFO) << "Client Connected: " << inet_ntoa(cliaddr.sin_addr) << ":" << cliaddr.sin_port;
 
             FD_SET(connfd, &allset);
-            if (connfd > maxfd)
+            if (connfd > maxfd) {
                 maxfd = connfd;
+            }
 
-            if (--nready <= 0)
+            if (--nready <= 0) {
                 continue;
+            }
         }
 
         //Recebe mensagens dos clientes conectados
@@ -83,11 +83,8 @@ void Server::selectLoop(int listenfd) {
                     //Cliente desconectou
                     clilen = sizeof cliaddr;
                     getpeername(sockfd, (struct sockaddr*)&cliaddr, &clilen);
-                    LOG(INFO) << "Client disconnected: " << inet_ntoa(cliaddr.sin_addr);
-                    //Fecha socket
-                    close(sockfd);
-                    FD_CLR(sockfd, &allset);
-                    connectedClientMap.erase(it);
+                    LOG(INFO) << "Client disconnected: " << inet_ntoa(cliaddr.sin_addr) << ":" << cliaddr.sin_port;
+                    Server::closeSocket(sockfd);
                 } else {
                     Message message;
                     if(incompleteMessageMap.find(sockfd) != incompleteMessageMap.end()){
@@ -98,7 +95,7 @@ void Server::selectLoop(int listenfd) {
                         std::stringstream ss(buf.data());
                         ss >> size;
                         message.size = n;
-                        message.expectedSize = size - n;
+                        message.expectedSize = size - n + ((int)ss.tellg() + 1);
                     }
 
                     message.buf.insert(message.buf.end(), buf.begin(), buf.end());
@@ -117,11 +114,28 @@ void Server::selectLoop(int listenfd) {
         }
     }
 }
+
+void Server::closeSocket(int sockfd) {
+    close(sockfd);
+    FD_CLR(sockfd, &allset);
+    Client* client = connectedClientMap.find(sockfd)->second;
+    connectedClientMap.erase(sockfd);
+    if(client != NULL) {
+        client->socketfd = -1;
+    }
+    if(connectedClientMap.size() > 0){
+        maxfd = (--connectedClientMap.end())->first;
+    } else {
+        maxfd = listenfd;
+    }
+}
+
 #pragma clang diagnostic pop
 
 void Server::executeCommand(Message::Action command, Message &message) {
     switch (command) {
         case Message::CONN :
+            Server::conn(message);
             break;
         case Message::SEND :
             break;
@@ -133,6 +147,20 @@ void Server::executeCommand(Message::Action command, Message &message) {
             break;
         case Message::WHO :
             break;
+    }
+}
+
+void Server::conn(Message &message) {
+    std::string user(message.buf.data());
+    if(clientMap.find(user) == clientMap.end()){
+        clientMap[user] = Client(user, -1);
+    }
+    if(clientMap.find(user)->second.socketfd == -1){
+        clientMap[user].socketfd = sockfd;
+        connectedClientMap[sockfd] = &clientMap[user];
+    } else {
+        std::string error = "Usuário já conectado";
+        send(sockfd, &error[0], error.length(), 0);
     }
 }
 
