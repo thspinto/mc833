@@ -45,7 +45,7 @@ void Server::selectLoop(int listenfd) {
     fd_set rset, allset;
     socklen_t clilen;
     struct sockaddr_in	cliaddr;
-    char buf[MAXLINE];
+    std::vector<char> buf(MAXLINE);
 
     maxfd = listenfd;
     FD_ZERO(&allset);
@@ -57,9 +57,10 @@ void Server::selectLoop(int listenfd) {
 
         // Verifica se novo cliente conectou
         if (FD_ISSET(listenfd, &rset)) {
-            clilen = sizeof(cliaddr);
+            clilen = sizeof cliaddr;
             connfd = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen);
-            connectedClientMap[connfd] = Client();
+            connectedClientMap[connfd] = NULL;
+            LOG(INFO) << "Client Connected: " << inet_ntoa(cliaddr.sin_addr);
 
             FD_SET(connfd, &allset);
             if (connfd > maxfd)
@@ -70,7 +71,7 @@ void Server::selectLoop(int listenfd) {
         }
 
         //Recebe mensagens dos clientes conectados
-        for(std::map<int, Client>::iterator it = connectedClientMap.begin();
+        for(std::map<int, Client*>::iterator it = connectedClientMap.begin();
             it != connectedClientMap.end(); it++) {
             if(connectedClientMap.size() < 1){
                 continue;
@@ -78,14 +79,36 @@ void Server::selectLoop(int listenfd) {
 
             sockfd = it->first;
             if (FD_ISSET(sockfd, &rset)) {
-                if ((n = read(sockfd, buf, MAXLINE)) == 0) {
+                if ((n = read(sockfd, buf.data(), buf.size())) == 0) {
                     //Cliente desconectou
+                    clilen = sizeof cliaddr;
+                    getpeername(sockfd, (struct sockaddr*)&cliaddr, &clilen);
+                    LOG(INFO) << "Client disconnected: " << inet_ntoa(cliaddr.sin_addr);
+                    //Fecha socket
                     close(sockfd);
                     FD_CLR(sockfd, &allset);
                     connectedClientMap.erase(it);
                 } else {
-                    send(sockfd, buf, n, 0);
-                    //TODO: Ler mensagem e colocar na fila
+                    Message message;
+                    if(incompleteMessageMap.find(sockfd) != incompleteMessageMap.end()){
+                        message = incompleteMessageMap[sockfd];
+                        message.expectedSize -= n;
+                    } else {
+                        int size;
+                        std::stringstream ss(buf.data());
+                        ss >> size;
+                        message.size = size;
+                        message.expectedSize = size - n;
+                    }
+
+                    message.buf.insert(message.buf.end(), buf.begin(), buf.end());
+
+                    if(message.expectedSize > 0) {
+                        incompleteMessageMap[sockfd] = message;
+                    } else {
+                        incompleteMessageMap.erase(sockfd);
+                        Server::executeCommand(message.parse(), message);
+                    }
                 }
                 if (--nready <= 0)
                     break; //sem clientes conectados
