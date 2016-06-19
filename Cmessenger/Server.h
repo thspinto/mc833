@@ -25,7 +25,7 @@ class Server {
     fd_set allset;
     std::map<std::string, Group> groupList;
     std::map<std::string, Client> clientMap;
-    std::queue<Message> messageQueue;
+    std::list<Message> messageQueue;
     std::map<int, Message> incompleteMessageMap;
     std::map<int, Client *> connectedClientMap;
     int port;

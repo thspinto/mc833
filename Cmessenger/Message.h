@@ -6,6 +6,7 @@
 #include <sstream>
 #include <vector>
 #include <map>
+#include <sys/socket.h>
 #include "Client.h"
 
 class Message {
@@ -31,9 +32,37 @@ public:
     /*
     * Parseia a mensagem recebida. Remove o comando no início da mensagem e o retorna como enum.
     *
-    * @param message: a mensagem completa recebida do cliente
+    * @return: ação a ser executada com a mensagem
     */
-    Message::Action parse();
+    Message::Action parseAction();
+
+    /*
+     * Pega o próximo parâmentro do comando.
+     *
+     * @return: o próximo parâmetro do comando
+     */
+    std::string parseCommandParameter();
+
+
+    /*
+     * Seta o buffer da mensagem.
+     *
+     * @param buffer: buffer da mensagem
+     * @param size: tamanho do buffer
+     */
+    void setBuffer(const char* buffer, int size);
+
+    /*
+     * Envia mensagem para destino.
+     *
+     * @return true se mensagem for enviada.
+     */
+    bool sendMessage();
+
+    Message(Client* origin, Client* dest, std::vector<char> buf): origin(origin), dest(dest), buf(buf),
+                                                                           size(buf.size()) {};
+
+    Message() {};
 };
 
 

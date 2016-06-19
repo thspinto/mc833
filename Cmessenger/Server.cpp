@@ -58,12 +58,12 @@ void Server::selectLoop() {
             clilen = sizeof cliaddr;
             connfd = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen);
             connectedClientMap[connfd] = NULL;
-            LOG(INFO) << "Client Connected: " << inet_ntoa(cliaddr.sin_addr) << ":" << cliaddr.sin_port;
-
             FD_SET(connfd, &allset);
             if (connfd > maxfd) {
                 maxfd = connfd;
             }
+
+            LOG(INFO) << "Client Connected: " << inet_ntoa(cliaddr.sin_addr) << ":" << cliaddr.sin_port;
 
             if (--nready <= 0) {
                 continue;
@@ -81,9 +81,6 @@ void Server::selectLoop() {
             if (FD_ISSET(sockfd, &rset)) {
                 if ((n = read(sockfd, buf.data(), buf.size())) == 0) {
                     //Cliente desconectou
-                    clilen = sizeof cliaddr;
-                    getpeername(sockfd, (struct sockaddr*)&cliaddr, &clilen);
-                    LOG(INFO) << "Client disconnected: " << inet_ntoa(cliaddr.sin_addr) << ":" << cliaddr.sin_port;
                     Server::closeSocket(sockfd);
                 } else {
                     Message message;
@@ -104,8 +101,7 @@ void Server::selectLoop() {
                         incompleteMessageMap[sockfd] = message;
                     } else {
                         incompleteMessageMap.erase(sockfd);
-                        executeCommand(message.parse(), message);
-                        send(sockfd, &message.buf[0], message.size, 0);
+                        executeCommand(message.parseAction(), message);
                     }
                 }
                 if (--nready <= 0)
@@ -116,13 +112,24 @@ void Server::selectLoop() {
 }
 
 void Server::closeSocket(int sockfd) {
+    socklen_t clilen;
+    struct sockaddr_in	cliaddr;
+
+    clilen = sizeof cliaddr;
+    getpeername(sockfd, (struct sockaddr*)&cliaddr, &clilen);
+
+    LOG(INFO) << "Client disconnected: " << inet_ntoa(cliaddr.sin_addr) << ":" << cliaddr.sin_port;
+
     close(sockfd);
     FD_CLR(sockfd, &allset);
+
     Client* client = connectedClientMap.find(sockfd)->second;
     connectedClientMap.erase(sockfd);
+
     if(client != NULL) {
         client->socketfd = -1;
     }
+
     if(connectedClientMap.size() > 0){
         maxfd = (--connectedClientMap.end())->first;
     } else {
@@ -151,16 +158,33 @@ void Server::executeCommand(Message::Action command, Message &message) {
 }
 
 void Server::conn(Message &message) {
-    std::string user(message.buf.data());
+    std::string user(message.parseCommandParameter());
+    std::string status = "CONN Usuário conectado\n";
     if(clientMap.find(user) == clientMap.end()){
+        /* Novo usuário */
         clientMap[user] = Client(user, -1);
     }
+
     if(clientMap.find(user)->second.socketfd == -1){
+        /* Associa socket ao usuário*/
         clientMap[user].socketfd = sockfd;
         connectedClientMap[sockfd] = &clientMap[user];
     } else {
-        std::string error = "Usuário já conectado";
-        send(sockfd, &error[0], error.length(), 0);
+        /* Usuário com um socket associado já*/
+        connectedClientMap[sockfd] = new Client("", sockfd);
+        status = "CONN Usuário já conectado\n";
+    }
+
+    Client* client = connectedClientMap[sockfd];
+    message.setBuffer(status.data(), status.length());
+    message.origin = client;
+    message.dest = client;
+
+    /* Envia mensagem para usuário conectado */
+    message.sendMessage();
+    if(client->user == ""){
+        /* Fecha conexão com socket sem usuário */
+        Server::closeSocket(sockfd);
     }
 }
 
