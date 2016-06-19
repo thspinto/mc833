@@ -11,6 +11,8 @@ public:
     std::string name;
     std::list<Client*> clients;
 
+    Group(std::string name): name(name){};
+    Group() {};
 };
 
 

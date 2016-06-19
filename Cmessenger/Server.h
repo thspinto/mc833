@@ -23,7 +23,7 @@
 class Server {
     int maxfd, sockfd, listenfd;
     fd_set allset;
-    std::map<std::string, Group> groupList;
+    std::map<std::string, Group> groupMap;
     std::map<std::string, Client> clientMap;
     std::list<Message> messageQueue;
     std::map<int, Message> incompleteMessageMap;
@@ -71,6 +71,8 @@ class Server {
 
     /*
      * Popula os clientes de origem, destino, e envia a mensagem.
+     *
+     * @param message: mensagem recebida
      */
     void send(Message& message);
 
@@ -90,6 +92,13 @@ class Server {
     Client* verifyDestClient(std::string destUser);
 
     /*
+     * Cria um novo grupo
+     *
+     * @param message: mensagem recebida
+     */
+    void createg(Message& message);
+
+    /*
      * Fecha o socket e remove do mapa de clientes conectados.
      */
     void closeSocket(int sockfd);
@@ -101,6 +110,8 @@ public:
      * @param port: Porta que irá escutar por novos clientes
      */
     int run(int port);
+
+    void sendServerMessage(std::string &status) const;
 };
 
 

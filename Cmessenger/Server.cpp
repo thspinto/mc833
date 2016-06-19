@@ -155,6 +155,7 @@ void Server::executeCommand(Message::Action command, Message &message) {
             Server::send(message);
             break;
         case Message::CREATEG :
+            Server::createg(message);
             break;
         case Message::JOING :
             break;
@@ -169,6 +170,22 @@ void Server::executeCommand(Message::Action command, Message &message) {
             messageQueue.erase(it);
         }
     }
+}
+
+void Server::createg(Message &message) {
+    if(!verifyConnectedClient()){
+        return;
+    };
+
+    std::string status = ("Groupo já existe\n");
+    std::string groupName = message.parseCommandParameter();
+    if(groupMap.find(groupName) == groupMap.end()) {
+        Group group(groupName);
+        group.clients.push_back(connectedClientMap[sockfd]);
+        groupMap[groupName] = group;
+        status = ("Groupo criado\n");
+    }
+    sendServerMessage(status);
 }
 
 void Server::send(Message &message) {
@@ -186,11 +203,8 @@ void Server::send(Message &message) {
 
 bool Server::verifyConnectedClient() {
     if(connectedClientMap.find(sockfd)->second == NULL){
-        std::string status = "Usuário não identificado\n";
-        std::vector<char> statusBuffer(status.begin(), status.end());
-        Client *client = new Client("", sockfd);
-        Message message(&clientMap["Server"], client, statusBuffer);
-        message.sendMessage();
+        std::string status = ("Usuário não identificado\n");
+        sendServerMessage(status);
         closeSocket(sockfd);
         return false;
     }
@@ -199,14 +213,18 @@ bool Server::verifyConnectedClient() {
 
 Client* Server::verifyDestClient(std::string destUser) {
     if(clientMap.find(destUser) == clientMap.end()){
-        std::string status = "Usuário de destino não existente\n";
-        std::vector<char> statusBuffer(status.begin(), status.end());
-        Client *client = connectedClientMap[sockfd];
-        Message message(&clientMap["Server"], client, statusBuffer);
-        message.sendMessage();
+        std::string status = std::string("Usuário de destino não existente\n");
+        sendServerMessage(status);
         return NULL;
     }
     return &clientMap.find(destUser)->second;
+}
+
+void Server::sendServerMessage(std::string &status) const {
+    std::vector<char> statusBuffer(status.begin(), status.end());
+    Client *client = connectedClientMap.find(sockfd)->second;
+    Message message(&clientMap.find("Server")->second, client, statusBuffer);
+    message.sendMessage();
 }
 
 void Server::conn(Message &message) {
@@ -227,13 +245,9 @@ void Server::conn(Message &message) {
         status = "Usuário já conectado\n";
     }
 
-    Client* client = connectedClientMap[sockfd];
-    message.setBuffer(status.data(), status.length());
-    message.origin = &clientMap["Server"];
-    message.dest = client;
+    sendServerMessage(status);
 
-    /* Envia mensagem para usuário conectado */
-    message.sendMessage();
+    Client* client = connectedClientMap[sockfd];
     if(client->user == ""){
         /* Fecha conexão com socket sem usuário */
         Server::closeSocket(sockfd);

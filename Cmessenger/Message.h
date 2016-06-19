@@ -13,8 +13,8 @@ class Message {
 
 public:
     int id;
-    Client *origin;
-    Client *dest;
+    const Client *origin;
+    const Client *dest;
     int size;
     int expectedSize;
     std::vector<char> buf;
@@ -59,7 +59,7 @@ public:
      */
     bool sendMessage();
 
-    Message(Client* origin, Client* dest, std::vector<char> buf): origin(origin), dest(dest), buf(buf),
+    Message(const Client* origin, const Client* dest, std::vector<char> buf): origin(origin), dest(dest), buf(buf),
                                                                            size(buf.size()) {};
 
     Message() {};
