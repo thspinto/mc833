@@ -5,6 +5,7 @@
 #include <list>
 #include <sstream>
 #include <vector>
+#include <map>
 #include "Client.h"
 
 class Message {
@@ -23,16 +24,16 @@ public:
         JOING,
         SENDG,
         WHO,
-        EXIT
     };
+
+    static std::map<std::string, Action> actionMap;
 
     /*
     * Parseia a mensagem recebida. Remove o comando no início da mensagem e o retorna como enum.
     *
     * @param message: a mensagem completa recebida do cliente
-    *
     */
-    Action parse();
+    Message::Action parse();
 };
 
 

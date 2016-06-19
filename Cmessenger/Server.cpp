@@ -97,7 +97,7 @@ void Server::selectLoop(int listenfd) {
                         int size;
                         std::stringstream ss(buf.data());
                         ss >> size;
-                        message.size = size;
+                        message.size = n;
                         message.expectedSize = size - n;
                     }
 
@@ -107,7 +107,8 @@ void Server::selectLoop(int listenfd) {
                         incompleteMessageMap[sockfd] = message;
                     } else {
                         incompleteMessageMap.erase(sockfd);
-                        Server::executeCommand(message.parse(), message);
+                        executeCommand(message.parse(), message);
+                        send(sockfd, &message.buf[0], message.size, 0);
                     }
                 }
                 if (--nready <= 0)
@@ -117,6 +118,23 @@ void Server::selectLoop(int listenfd) {
     }
 }
 #pragma clang diagnostic pop
+
+void Server::executeCommand(Message::Action command, Message &message) {
+    switch (command) {
+        case Message::CONN :
+            break;
+        case Message::SEND :
+            break;
+        case Message::CREATEG :
+            break;
+        case Message::JOING :
+            break;
+        case Message::SENDG :
+            break;
+        case Message::WHO :
+            break;
+    }
+}
 
 // Referência: http://stackoverflow.com/questions/212528/get-the-ip-address-of-the-machine
 void Server::printLocalAddress() {
