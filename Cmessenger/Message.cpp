@@ -48,6 +48,10 @@ void Message::setBuffer(const char* buffer, int size) {
 bool Message::sendMessage() {
     if(origin != NULL){
         std::string user = origin->user;
+        if(groupHeader.length() > 0) {
+            user.append("@");
+            user.append(groupHeader);
+        }
         user.append(" ");
         send(dest->socketfd, user.data(), user.length(), 0);
     }

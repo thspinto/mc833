@@ -64,7 +64,7 @@ void Server::selectLoop() {
                 continue;
             }
 
-            connectedClientMap[connfd] = NULL;
+            connectedClientMap[connfd] = new Client("", connfd);
             FD_SET(connfd, &allset);
             if (connfd > maxfd) {
                 maxfd = connfd;
@@ -158,10 +158,13 @@ void Server::executeCommand(Message::Action command, Message &message) {
             Server::createg(message);
             break;
         case Message::JOING :
+            Server::joing(message);
             break;
         case Message::SENDG :
+            Server::sendg(message);
             break;
         case Message::WHO :
+            Server::who();
             break;
     }
     for(std::list<Message>::iterator it = messageQueue.begin(); it != messageQueue.end(); it++){
@@ -172,6 +175,68 @@ void Server::executeCommand(Message::Action command, Message &message) {
     }
 }
 
+void Server::who() {
+    if(!verifyConnectedClient()){
+        return;
+    };
+    std::map<std::string, Client>::iterator it;
+    std::string clientList = "| usuário | status |\n";
+    for(it = clientMap.begin(); it != clientMap.end(); it++){
+        if(it->second.user == "Server") {
+            /* Ingnora o usuário server */
+            continue;
+        }
+        clientList.append("| ");
+        clientList.append(it->first);
+        clientList.append(" | ");
+        if(it->second.socketfd == -1){
+            clientList.append("offline");
+        } else {
+            clientList.append("online");
+        }
+        clientList.append(" |\n");
+    }
+    sendServerMessage(clientList);
+}
+
+void Server::sendg(Message &message) {
+    if(!verifyConnectedClient()){
+        return;
+    };
+    std::string status = ("Groupo não existe\n");
+    std::string groupName = message.parseCommandParameter();
+    const std::map<std::string, Group>::iterator &it = groupMap.find(groupName);
+    if(it != groupMap.end()) {
+        status = ("Mensagem de grupo enfileirada\n");
+        Client* origin = connectedClientMap[sockfd];
+        std::set<Client *>::iterator clientsIt;
+        for(clientsIt = it->second.clients.begin(); clientsIt != it->second.clients.end(); clientsIt++) {
+            if ((*clientsIt)->user != origin->user) { //Não envia para a origem
+                Message groupMessage(origin, *clientsIt, message.buf);
+                groupMessage.groupHeader = it->second.name;
+                messageQueue.push_back(groupMessage);
+            }
+        }
+    }
+
+    sendServerMessage(status);
+}
+
+void Server::joing(Message &message) {
+    if(!verifyConnectedClient()){
+        return;
+    };
+    std::string status = ("Groupo não existe\n");
+    std::string groupName = message.parseCommandParameter();
+    const std::map<std::string, Group>::iterator &it = groupMap.find(groupName);
+    if(it != groupMap.end()) {
+        status = ("Usuário adicionado ao grupo\n");
+        it->second.clients.insert(connectedClientMap[sockfd]);
+    }
+
+    sendServerMessage(status);
+    }
+
 void Server::createg(Message &message) {
     if(!verifyConnectedClient()){
         return;
@@ -181,7 +246,7 @@ void Server::createg(Message &message) {
     std::string groupName = message.parseCommandParameter();
     if(groupMap.find(groupName) == groupMap.end()) {
         Group group(groupName);
-        group.clients.push_back(connectedClientMap[sockfd]);
+        group.clients.insert(connectedClientMap[sockfd]);
         groupMap[groupName] = group;
         status = ("Groupo criado\n");
     }
@@ -234,6 +299,10 @@ void Server::conn(Message &message) {
         /* Novo usuário */
         clientMap[user] = Client(user, -1);
     }
+    if(connectedClientMap.find(sockfd) != connectedClientMap.end()) {
+        //Já existia um cliente nessa sessão. Desconecta ele.
+        connectedClientMap.find(sockfd)->second->socketfd = -1;
+    }
 
     if(clientMap.find(user)->second.socketfd == -1){
         /* Associa socket ao usuário*/
@@ -241,7 +310,6 @@ void Server::conn(Message &message) {
         connectedClientMap[sockfd] = &clientMap[user];
     } else {
         /* Usuário com um socket associado já*/
-        connectedClientMap[sockfd] = new Client("", sockfd);
         status = "Usuário já conectado\n";
     }
 

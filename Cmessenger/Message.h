@@ -13,6 +13,7 @@ class Message {
 
 public:
     int id;
+    std::string groupHeader;
     const Client *origin;
     const Client *dest;
     int size;

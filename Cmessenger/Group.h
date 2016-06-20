@@ -2,14 +2,14 @@
 #define CMESSENGER_GROUP_H
 
 #include <string>
-#include <list>
+#include <set>
 
 class Client;
 class Group {
 
 public:
     std::string name;
-    std::list<Client*> clients;
+    std::set<Client*> clients;
 
     Group(std::string name): name(name){};
     Group() {};

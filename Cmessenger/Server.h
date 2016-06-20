@@ -99,6 +99,25 @@ class Server {
     void createg(Message& message);
 
     /*
+     * Adiciona usuário ao grupo
+     *
+     * @param message: mensagem recebida
+     */
+    void joing(Message& message);
+
+    /*
+     * Envia mensagem ao grupo
+     *
+     * @param message: mensagem recebida
+     */
+    void sendg(Message& message);
+
+    /*
+     * Envia lista de usuários
+     */
+    void who();
+
+    /*
      * Fecha o socket e remove do mapa de clientes conectados.
      */
     void closeSocket(int sockfd);
