@@ -3,6 +3,21 @@
 
 #include <string>
 #include <list>
+#include "Message.h"
+#include "Group.h"
+#include <list>
+#include <map>
+#include <queue>
+#include <string>
+#include <sstream>
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <ifaddrs.h>
+#include <arpa/inet.h>
+
+#define MAX_LINE 256
 
 class Group;
 class Client {
@@ -14,6 +29,14 @@ public:
     std::list<Group*> groups;
     Client(std::string user, int socketfd): user(user), socketfd(socketfd) {}
     Client() {}
+    int serverPort;
+
+
+    int run(const char *lh, int port);
+
+    int createConnection(const char *ip, int port);
+
+    int sendMessage(int s);
 };
 
 
