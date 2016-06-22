@@ -30,13 +30,13 @@ public:
     Client(std::string user, int socketfd): user(user), socketfd(socketfd) {}
     Client() {}
     int serverPort;
+    char *host;
 
+    bool createConnection();
 
-    int run(const char *lh, int port);
+    int run(char *lh, int port, char *user);
 
-    int createConnection(const char *ip, int port);
-
-    int sendMessage(int s);
+    int getAndsendMessages();
 };
 
 
