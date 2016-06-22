@@ -3,7 +3,7 @@
 
 int Server::run(int port) {
     //Cria cliente que representa o servidor
-    clientMap["Server"] = Client("Server", -1);
+    clientMap["Server"] = User("Server", -1);
 
     Server::port = port;
     startListen();
@@ -64,13 +64,13 @@ void Server::selectLoop() {
                 continue;
             }
 
-            connectedClientMap[connfd] = new Client("", connfd);
+            connectedClientMap[connfd] = new User("", connfd);
             FD_SET(connfd, &allset);
             if (connfd > maxfd) {
                 maxfd = connfd;
             }
 
-            LOG(INFO) << "Client Connected: " << inet_ntoa(cliaddr.sin_addr) << ":" << cliaddr.sin_port;
+            LOG(INFO) << "User Connected: " << inet_ntoa(cliaddr.sin_addr) << ":" << cliaddr.sin_port;
 
             if (--nready <= 0) {
                 continue;
@@ -78,7 +78,7 @@ void Server::selectLoop() {
         }
 
         //Recebe mensagens dos clientes conectados
-        for(std::map<int, Client*>::iterator it = connectedClientMap.begin();
+        for(std::map<int, User*>::iterator it = connectedClientMap.begin();
             it != connectedClientMap.end(); it++) {
             if(connectedClientMap.size() < 1){
                 continue;
@@ -125,12 +125,12 @@ void Server::closeSocket(int sockfd) {
     clilen = sizeof cliaddr;
     getpeername(sockfd, (struct sockaddr*)&cliaddr, &clilen);
 
-    LOG(INFO) << "Client disconnected: " << inet_ntoa(cliaddr.sin_addr) << ":" << cliaddr.sin_port;
+    LOG(INFO) << "User disconnected: " << inet_ntoa(cliaddr.sin_addr) << ":" << cliaddr.sin_port;
 
     close(sockfd);
     FD_CLR(sockfd, &allset);
 
-    Client* client = connectedClientMap.find(sockfd)->second;
+    User* client = connectedClientMap.find(sockfd)->second;
     connectedClientMap.erase(sockfd);
 
     if(client != NULL) {
@@ -205,7 +205,7 @@ void Server::who() {
     if(!verifyConnectedClient()){
         return;
     };
-    std::map<std::string, Client>::iterator it;
+    std::map<std::string, User>::iterator it;
     std::string clientList = "| usuário | status |\n";
     for(it = clientMap.begin(); it != clientMap.end(); it++){
         if(it->second.user == "Server") {
@@ -242,9 +242,9 @@ void Server::sendg(Message &message) {
         Group group = it->second;
         message.id = getMessageId(groupName, message);
         status = message.id.append(" enfileirada\n");
-        Client* origin = connectedClientMap[sockfd];
+        User* origin = connectedClientMap[sockfd];
         group.messageCount[message.id] = 0;
-        std::set<Client *>::iterator clientsIt;
+        std::set<User *>::iterator clientsIt;
         for(clientsIt = group.clients.begin(); clientsIt != group.clients.end(); clientsIt++) {
             if ((*clientsIt)->user != origin->user) { //Não envia para a origem
                 Message groupMessage(origin, *clientsIt, message.buf);
@@ -319,7 +319,7 @@ bool Server::verifyConnectedClient() {
     return true;
 }
 
-Client* Server::verifyDestClient(std::string destUser) {
+User* Server::verifyDestClient(std::string destUser) {
     if(clientMap.find(destUser) == clientMap.end()){
         std::string status = std::string("Usuário de destino não existente\n");
         sendServerMessage(status);
@@ -330,7 +330,7 @@ Client* Server::verifyDestClient(std::string destUser) {
 
 void Server::sendServerMessage(std::string &status) const {
     std::vector<char> statusBuffer(status.begin(), status.end());
-    Client *client = connectedClientMap.find(sockfd)->second;
+    User *client = connectedClientMap.find(sockfd)->second;
     Message message(&clientMap.find("Server")->second, client, statusBuffer);
     message.sendMessage();
 }
@@ -340,7 +340,7 @@ void Server::conn(Message &message) {
     std::string status = "Usuário conectado\n";
     if(clientMap.find(user) == clientMap.end()){
         /* Novo usuário */
-        clientMap[user] = Client(user, -1);
+        clientMap[user] = User(user, -1);
     }
     if(connectedClientMap.find(sockfd) != connectedClientMap.end()) {
         //Já existia um cliente nessa sessão. Desconecta ele.
@@ -358,7 +358,7 @@ void Server::conn(Message &message) {
 
     sendServerMessage(status);
 
-    Client* client = connectedClientMap[sockfd];
+    User* client = connectedClientMap[sockfd];
     if(client->user == ""){
         /* Fecha conexão com socket sem usuário */
         Server::closeSocket(sockfd);

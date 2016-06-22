@@ -7,15 +7,15 @@
 #include <vector>
 #include <map>
 #include <sys/socket.h>
-#include "Client.h"
+#include "User.h"
 
 class Message {
 
 public:
     std::string id;
     std::string groupHeader;
-    const Client *origin;
-    const Client *dest;
+    const User *origin;
+    const User *dest;
     int size;
     int expectedSize;
     std::vector<char> buf;
@@ -67,7 +67,7 @@ public:
      */
     std::string toString();
 
-    Message(const Client* origin, const Client* dest, std::vector<char> buf): origin(origin), dest(dest), buf(buf),
+    Message(const User* origin, const User* dest, std::vector<char> buf): origin(origin), dest(dest), buf(buf),
                                                                            size(buf.size()) {};
 
     Message() {};

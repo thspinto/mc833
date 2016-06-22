@@ -5,12 +5,12 @@
 #include <set>
 #include <map>
 
-class Client;
+class User;
 class Group {
 
 public:
     std::string name;
-    std::set<Client*> clients;
+    std::set<User*> clients;
     std::map<std::string, int> messageCount;
 
     Group(std::string name): name(name){};

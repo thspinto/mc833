@@ -2,7 +2,7 @@
 #define CMESSENGER_SERVER_H
 
 
-#include "Client.h"
+#include "User.h"
 #include "Message.h"
 #include "Group.h"
 #include "md5.h"
@@ -25,10 +25,10 @@ class Server {
     int maxfd, sockfd, listenfd;
     fd_set allset;
     std::map<std::string, Group> groupMap;
-    std::map<std::string, Client> clientMap;
+    std::map<std::string, User> clientMap;
     std::list<Message> messageQueue;
     std::map<int, Message> incompleteMessageMap;
-    std::map<int, Client *> connectedClientMap;
+    std::map<int, User *> connectedClientMap;
     int port;
 
     /*
@@ -38,7 +38,7 @@ class Server {
      * @param socketfd: file descripor do socket
      * @return cliente connectado àquele socket
      */
-    Client getClient(int socketfd);
+    User getClient(int socketfd);
 
     /*
      * Chama a função adequada para tratar o comando recebido do cliente.
@@ -90,7 +90,7 @@ class Server {
      * @param destUser: nome do usuário de destino.
      * @return o Cliente se existir, NULL caso contrário.
      */
-    Client* verifyDestClient(std::string destUser);
+    User* verifyDestClient(std::string destUser);
 
     /*
      * Cria um novo grupo

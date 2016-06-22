@@ -20,15 +20,15 @@
 #define MAX_LINE 256
 
 class Group;
-class Client {
+class User {
 
 public:
     int socketfd;
     int id;
     std::string user;
     std::list<Group*> groups;
-    Client(std::string user, int socketfd): user(user), socketfd(socketfd) {}
-    Client() {}
+    User(std::string user, int socketfd): user(user), socketfd(socketfd) {}
+    User() {}
     int serverPort;
     char *host;
 
