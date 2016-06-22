@@ -171,6 +171,32 @@ void Server::executeCommand(Message::Action command, Message &message) {
         if(it->dest->socketfd != -1){
             it->sendMessage();
             messageQueue.erase(it);
+            sendDeliveryNotification(*it);
+        }
+    }
+}
+
+void Server::sendDeliveryNotification(Message &message) {
+    std::string status = message.id;
+    status.append(" entregue\n");
+    if(message.origin->user != "Server") {
+        Message *deliverMessage = NULL;
+        if (message.groupHeader.length() > 0) {
+            int count = --groupMap[message.groupHeader].messageCount[message.id];
+            if (count == 0) {//Grupo
+                std::vector<char> statusBuffer(status.begin(), status.end());
+                deliverMessage = new Message(&clientMap.find("Server")->second, message.origin, statusBuffer);
+            }
+        } else {//Individual
+            std::__1::vector<char> statusBuffer(status.begin(), status.end());
+            deliverMessage = new Message(&clientMap.find("Server")->second, message.origin, statusBuffer);
+        }
+        if(deliverMessage != NULL) {
+            if (deliverMessage->dest->socketfd != -1) {
+                deliverMessage->sendMessage();
+            } else {
+                messageQueue.push_front(*deliverMessage);
+            }
         }
     }
 }
@@ -199,6 +225,12 @@ void Server::who() {
     sendServerMessage(clientList);
 }
 
+std::string Server::getMessageId(std::string destName, Message &message) {
+    std::string messageId = message.origin->user;
+    messageId.append(destName).append(message.toString());
+    return md5(messageId).substr(0, 6);
+}
+
 void Server::sendg(Message &message) {
     if(!verifyConnectedClient()){
         return;
@@ -207,14 +239,18 @@ void Server::sendg(Message &message) {
     std::string groupName = message.parseCommandParameter();
     const std::map<std::string, Group>::iterator &it = groupMap.find(groupName);
     if(it != groupMap.end()) {
-        status = ("Mensagem de grupo enfileirada\n");
+        Group group = it->second;
+        message.id = getMessageId(groupName, message);
+        status = message.id.append(" enfileirada\n");
         Client* origin = connectedClientMap[sockfd];
+        group.messageCount[message.id] = 0;
         std::set<Client *>::iterator clientsIt;
-        for(clientsIt = it->second.clients.begin(); clientsIt != it->second.clients.end(); clientsIt++) {
+        for(clientsIt = group.clients.begin(); clientsIt != group.clients.end(); clientsIt++) {
             if ((*clientsIt)->user != origin->user) { //Não envia para a origem
                 Message groupMessage(origin, *clientsIt, message.buf);
-                groupMessage.groupHeader = it->second.name;
+                groupMessage.groupHeader = groupName;
                 messageQueue.push_back(groupMessage);
+                group.messageCount[message.id]++;
             }
         }
     }
@@ -230,7 +266,8 @@ void Server::joing(Message &message) {
     std::string groupName = message.parseCommandParameter();
     const std::map<std::string, Group>::iterator &it = groupMap.find(groupName);
     if(it != groupMap.end()) {
-        status = ("Usuário adicionado ao grupo\n");
+        status = ("Usuário adicionado ao grupo ");
+        status.append(groupName).append("\n");
         it->second.clients.insert(connectedClientMap[sockfd]);
     }
 
@@ -248,7 +285,8 @@ void Server::createg(Message &message) {
         Group group(groupName);
         group.clients.insert(connectedClientMap[sockfd]);
         groupMap[groupName] = group;
-        status = ("Groupo criado\n");
+        status = ("Groupo ");
+        status = status.append(groupName).append(" criado\n");
     }
     sendServerMessage(status);
 }
@@ -261,8 +299,13 @@ void Server::send(Message &message) {
     std::string destUser = message.parseCommandParameter();
     message.origin = connectedClientMap[sockfd];
     message.dest = verifyDestClient(destUser);
+    message.id = getMessageId(destUser, message);
+
+    std::string status = message.id;
+    status.append(" enfileirada\n");
     if(message.dest != NULL) {
         messageQueue.push_back(message);
+        sendServerMessage(status);
     }
 }
 

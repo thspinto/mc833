@@ -12,7 +12,7 @@
 class Message {
 
 public:
-    int id;
+    std::string id;
     std::string groupHeader;
     const Client *origin;
     const Client *dest;
@@ -59,6 +59,13 @@ public:
      * @return true se mensagem for enviada.
      */
     bool sendMessage();
+
+    /*
+     * Pega o conteúdo da mensagem.
+     *
+     * @return: conteúdo da mensagem em formato string
+     */
+    std::string toString();
 
     Message(const Client* origin, const Client* dest, std::vector<char> buf): origin(origin), dest(dest), buf(buf),
                                                                            size(buf.size()) {};

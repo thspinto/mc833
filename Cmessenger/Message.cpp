@@ -45,6 +45,10 @@ void Message::setBuffer(const char* buffer, int size) {
     Message::size = size;
 }
 
+std::string Message::toString() {
+    return std::string(buf.begin(), buf.end());
+}
+
 bool Message::sendMessage() {
     if(origin != NULL){
         std::string user = origin->user;

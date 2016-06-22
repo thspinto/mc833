@@ -3,6 +3,7 @@
 
 #include <string>
 #include <set>
+#include <map>
 
 class Client;
 class Group {
@@ -10,6 +11,7 @@ class Group {
 public:
     std::string name;
     std::set<Client*> clients;
+    std::map<std::string, int> messageCount;
 
     Group(std::string name): name(name){};
     Group() {};

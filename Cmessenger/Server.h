@@ -5,6 +5,7 @@
 #include "Client.h"
 #include "Message.h"
 #include "Group.h"
+#include "md5.h"
 #include <list>
 #include <map>
 #include <queue>
@@ -122,6 +123,15 @@ class Server {
      */
     void closeSocket(int sockfd);
 
+    /*
+     * Calcula o id da mensagem
+     *
+     * @param menssage: a mensagem
+     * @param destName: nome do destino da mensagem
+     * @return: id da mensagem
+     */
+    std::string getMessageId(std::string destName, Message& message);
+
 public:
     /*
      * Inicia o servidor.
@@ -131,6 +141,13 @@ public:
     int run(int port);
 
     void sendServerMessage(std::string &status) const;
+
+    /*
+     * Envia mensagem de confimação de entrega.
+     *
+     * @param message: mensagem entregue
+     */
+    void sendDeliveryNotification(Message &message);
 };
 
 
