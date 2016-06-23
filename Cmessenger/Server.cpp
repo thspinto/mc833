@@ -304,7 +304,7 @@ bool Server::verifyConnectedClient() {
     if(connectedClientMap.find(sockfd)->second == NULL){
         std::string status = ("Usuário não identificado\n");
         sendServerMessage(status);
-        closeSocket(sockfd);
+        shutdown(sockfd, SHUT_WR);
         return false;
     }
     return true;
@@ -334,10 +334,6 @@ void Server::conn(Message &message) {
         /* Novo usuário */
         clientMap[user] = User(user, -1);
     }
-    if(connectedClientMap.find(sockfd) != connectedClientMap.end()) {
-        //Já existia um cliente nessa sessão. Desconecta ele.
-        connectedClientMap.find(sockfd)->second->socketfd = -1;
-    }
 
     if(clientMap.find(user)->second.socketfd == -1){
         /* Associa socket ao usuário*/
@@ -347,13 +343,12 @@ void Server::conn(Message &message) {
         /* Usuário com um socket associado já*/
         status = "Usuário já conectado\n";
     }
-
     sendServerMessage(status);
 
     User* client = connectedClientMap[sockfd];
     if(client->user == ""){
         /* Fecha conexão com socket sem usuário */
-        Server::closeSocket(sockfd);
+        shutdown(sockfd, SHUT_WR);
     }
 }
 
