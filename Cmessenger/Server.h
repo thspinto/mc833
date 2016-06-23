@@ -146,6 +146,7 @@ public:
      * Envia mensagem de confimação de entrega.
      *
      * @param message: mensagem entregue
+     * @return a mesagem caso não seja entregue imediatamente
      */
     void sendDeliveryNotification(Message &message);
 };

@@ -51,12 +51,13 @@ std::string Message::toString() {
 
 bool Message::sendMessage() {
     if(origin != NULL){
-        std::string user = origin->user;
+        std::string user = "[";
+        user.append(origin->user);
         if(groupHeader.length() > 0) {
             user.append("@");
             user.append(groupHeader);
         }
-        user.append(" ");
+        user.append(">] ");
         send(dest->socketfd, user.data(), user.length(), 0);
     }
     send(dest->socketfd, &buf[0], size, 0);

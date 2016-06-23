@@ -2,9 +2,6 @@
 #include "easylogging++.h"
 
 int Server::run(int port) {
-    //Cria cliente que representa o servidor
-    clientMap["Server"] = User("Server", -1);
-
     Server::port = port;
     startListen();
     selectLoop();
@@ -167,11 +164,17 @@ void Server::executeCommand(Message::Action command, Message &message) {
             Server::who();
             break;
     }
-    for(std::list<Message>::iterator it = messageQueue.begin(); it != messageQueue.end(); it++){
-        if(it->dest->socketfd != -1){
-            it->sendMessage();
-            messageQueue.erase(it);
-            sendDeliveryNotification(*it);
+
+    if(messageQueue.size() > 0) {
+        std::list<Message>::iterator it = messageQueue.begin();
+        while (it != messageQueue.end()) {
+            if (it->dest->socketfd != -1) {
+                it->sendMessage();
+                sendDeliveryNotification(*it);
+                it = messageQueue.erase(it);
+                continue;
+            }
+            it++;
         }
     }
 }
@@ -179,24 +182,16 @@ void Server::executeCommand(Message::Action command, Message &message) {
 void Server::sendDeliveryNotification(Message &message) {
     std::string status = message.id;
     status.append(" entregue\n");
-    if(message.origin->user != "Server") {
-        Message *deliverMessage = NULL;
+    if(message.origin != NULL) {
         if (message.groupHeader.length() > 0) {
             int count = --groupMap[message.groupHeader].messageCount[message.id];
             if (count == 0) {//Grupo
                 std::vector<char> statusBuffer(status.begin(), status.end());
-                deliverMessage = new Message(&clientMap.find("Server")->second, message.origin, statusBuffer);
+                messageQueue.push_back(Message(NULL, message.origin, statusBuffer));
             }
         } else {//Individual
-            std::__1::vector<char> statusBuffer(status.begin(), status.end());
-            deliverMessage = new Message(&clientMap.find("Server")->second, message.origin, statusBuffer);
-        }
-        if(deliverMessage != NULL) {
-            if (deliverMessage->dest->socketfd != -1) {
-                deliverMessage->sendMessage();
-            } else {
-                messageQueue.push_front(*deliverMessage);
-            }
+            std::vector<char> statusBuffer(status.begin(), status.end());
+            messageQueue.push_back(Message(NULL, message.origin, statusBuffer));
         }
     }
 }
@@ -208,10 +203,6 @@ void Server::who() {
     std::map<std::string, User>::iterator it;
     std::string clientList = "| usuário | status |\n";
     for(it = clientMap.begin(); it != clientMap.end(); it++){
-        if(it->second.user == "Server") {
-            /* Ingnora o usuário server */
-            continue;
-        }
         clientList.append("| ");
         clientList.append(it->first);
         clientList.append(" | ");
@@ -331,13 +322,14 @@ User* Server::verifyDestClient(std::string destUser) {
 void Server::sendServerMessage(std::string &status) const {
     std::vector<char> statusBuffer(status.begin(), status.end());
     User *client = connectedClientMap.find(sockfd)->second;
-    Message message(&clientMap.find("Server")->second, client, statusBuffer);
+    Message message(NULL, client, statusBuffer);
     message.sendMessage();
 }
 
 void Server::conn(Message &message) {
     std::string user(message.parseCommandParameter());
-    std::string status = "Usuário conectado\n";
+    std::string status = user;
+    status.append(" conectado\n");
     if(clientMap.find(user) == clientMap.end()){
         /* Novo usuário */
         clientMap[user] = User(user, -1);
