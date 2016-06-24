@@ -180,12 +180,14 @@ void Server::executeCommand(Message::Action command, Message &message) {
 }
 
 void Server::sendDeliveryNotification(Message &message) {
-    std::string status = message.id;
+    std::string status(message.id);
     status.append(" entregue\n");
     if(message.origin != NULL) {
         if (message.groupHeader.length() > 0) {
-            int count = --groupMap[message.groupHeader].messageCount[message.id];
+            Group group = groupMap[message.groupHeader];
+            int count = --group.messageCount.at(message.groupMessageId);
             if (count == 0) {//Grupo
+                status.assign(message.originalMessageHash).append(" entregue\n");
                 std::vector<char> statusBuffer(status.begin(), status.end());
                 messageQueue.push_back(Message(NULL, message.origin, statusBuffer));
             }
@@ -230,19 +232,25 @@ void Server::sendg(Message &message) {
     std::string groupName = message.parseCommandParameter();
     const std::map<std::string, Group>::iterator &it = groupMap.find(groupName);
     if(it != groupMap.end()) {
-        Group group = it->second;
-        message.id = getMessageId(groupName, message);
-        status = message.id.append(" enfileirada\n");
-        User* origin = connectedClientMap[sockfd];
-        group.messageCount[message.id] = 0;
-        std::set<User *>::iterator clientsIt;
-        for(clientsIt = group.clients.begin(); clientsIt != group.clients.end(); clientsIt++) {
-            if ((*clientsIt)->user != origin->user) { //Não envia para a origem
-                Message groupMessage(origin, *clientsIt, message.buf);
-                groupMessage.groupHeader = groupName;
-                messageQueue.push_back(groupMessage);
-                group.messageCount[message.id]++;
+        if(it->second.clients.size() > 1) {
+            Group& group = it->second;
+            message.id = getMessageId(groupName, message);
+            status.assign(message.id).append(" enfileirada\n");
+            User *origin = connectedClientMap[sockfd];
+            group.messageCount.push_back(0);
+            std::set<User *>::iterator clientsIt;
+            for (clientsIt = group.clients.begin(); clientsIt != group.clients.end(); clientsIt++) {
+                if ((*clientsIt)->user != origin->user) { //Não envia para a origem
+                    Message groupMessage(origin, *clientsIt, message.buf);
+                    groupMessage.originalMessageHash = message.id;
+                    groupMessage.groupHeader = groupName;
+                    groupMessage.groupMessageId = group.messageCount.size() - 1;
+                    messageQueue.push_back(groupMessage);
+                    group.messageCount.at(groupMessage.groupMessageId)++;
+                }
             }
+        } else {
+            status = ("Grupo vazio\n");
         }
     }
 
@@ -292,7 +300,7 @@ void Server::send(Message &message) {
     message.dest = verifyDestClient(destUser);
     message.id = getMessageId(destUser, message);
 
-    std::string status = message.id;
+    std::string status(message.id);
     status.append(" enfileirada\n");
     if(message.dest != NULL) {
         messageQueue.push_back(message);

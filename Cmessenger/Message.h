@@ -13,6 +13,8 @@ class Message {
 
 public:
     std::string id;
+    int groupMessageId;
+    std::string originalMessageHash;
     std::string groupHeader;
     const User *origin;
     const User *dest;

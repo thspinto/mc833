@@ -3,7 +3,7 @@
 
 #include <string>
 #include <set>
-#include <map>
+#include <vector>
 
 class User;
 class Group {
@@ -11,7 +11,7 @@ class Group {
 public:
     std::string name;
     std::set<User*> clients;
-    std::map<std::string, int> messageCount;
+    std::vector<int> messageCount;
 
     Group(std::string name): name(name){};
     Group() {};
