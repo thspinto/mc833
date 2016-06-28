@@ -119,6 +119,16 @@ class Server {
     void who();
 
     /*
+     * Requisição de envio de arquivo para outro usuário
+     */
+    void sendf();
+
+    /*
+     * Entrega aquivo ao cliente
+     */
+    void getf();
+
+    /*
      * Fecha o socket e remove do mapa de clientes conectados.
      */
     void closeSocket(int sockfd);

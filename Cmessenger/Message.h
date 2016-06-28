@@ -28,6 +28,8 @@ public:
         JOING,
         SENDG,
         WHO,
+        SENDF,
+        GETF
     };
 
     static std::map<std::string, Action> actionMap;

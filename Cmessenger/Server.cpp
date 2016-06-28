@@ -163,6 +163,12 @@ void Server::executeCommand(Message::Action command, Message &message) {
         case Message::WHO :
             Server::who();
             break;
+        case Message::SENDF:
+            Server::sendf();
+            break;
+        case Message::GETF:
+            Server::getf();
+            break;
     }
 
     if(messageQueue.size() > 0) {
@@ -177,6 +183,20 @@ void Server::executeCommand(Message::Action command, Message &message) {
             it++;
         }
     }
+}
+
+void Server::sendf() {
+    //Salva arquivo localentmente
+    //Guarda nome do arquivo no mapa idMensagem -> nome arquivo
+    //Manda aviso para cliente de destino
+}
+
+void Server::getf() {
+    //Cria um fork
+    //Pega nome do arquivo no mapa
+    //Envia o arquivo
+    //Apaga o arquivo
+    //Envia mensage de arquivo entregue para usuário origem
 }
 
 void Server::sendDeliveryNotification(Message &message) {
