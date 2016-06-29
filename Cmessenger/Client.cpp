@@ -1,16 +1,12 @@
 #include <string.h>
+#include <iostream>
+#include <vector>
 #include "Client.h"
-#include "easylogging++.h"
 
-int Client::run(char* lh, int port, char* user){
 
-    Client::serverPort = port;
-    strcpy(Client::host, lh);
-    strcpy(Client::user, user);
-
-    printf("bla....");
+int Client::run(){
     if(createConnection()){
-        getAndsendMessages();
+        getAndSendMessages();
     }
 
     return 0;
@@ -26,7 +22,7 @@ bool Client::createConnection(){
     bcopy(hp->h_addr, (char *)&sin.sin_addr, hp->h_length);
     sin.sin_port = htons(Client::serverPort);
 
-    if ((Client::socketfd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
+    if ((Client::socketfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         perror("simplex-talk: socket");
         return false;
     }
@@ -40,52 +36,37 @@ bool Client::createConnection(){
     return true;
 }
 
-int Client::getAndsendMessages(){
-    size_t len;
-    char buf[MAX_LINE];
-    char aux[MAX_LINE];
-    std::cout << "$[" << Client::user << "]";
-    while (std::cin >> aux) {
-        std::cout << "\n";
-        //fgets(aux, sizeof(buf), stdin)
-        len = strlen(aux);
-        sprintf(buf, "%d", len);
-        strcat(buf, " ");
-        strcat(buf, aux);
-        buf[MAX_LINE-1] = '\0';
-        len = strlen(buf) + 1;
-        send(Client::socketfd, buf, len, 0);
-        recv(Client::socketfd, buf, sizeof(buf), 0);
-        //fputs(buf, stdout);
-        std::cout << buf;
-        std::cout << "$[" << Client::user << "]";
-    }
+// Evnia mensagem para o servidor
+void Client::sendMessage(std::string message){
+    std::string size = std::to_string(message.size());
+    std::string msg = size.append(" ").append(message);
+    send(socketfd, &msg[0], msg.length(), 0);
+    return;
 }
 
-int main(int argc, char **argv) {
-    int port = 4444;
-    if(argc > 1) {
-        std::istringstream ht(argv[1]);
-        if(strlen(ht) < 8){
-            //7.7.7.7
-            LOG(WARNING) << "Invalid host " << argv[1] << '\n';
-            std::cout << "usage hostname, eg: 143.134.65.23";
-        }
-        std::istringstream iss(argv[2]);
-        if (!(iss >> port)) {
-            LOG(WARNING) << "Invalid port " << argv[1] << '\n';
-            std::cout << "usage: server <port>";
-        }
+// Recebe mensagem do servidor e exiba na tela
+void Client::recvMessage(){
+    std::vector<char> buf(MAX_LINE);
+    recv(socketfd, buf.data(), buf.size(), 0);
+    std::cout << buf.data();
+    return;
+}
 
-        std::istringstream Client(argv[3]);
-        if (!Client){
-            LOG(WARNING) << "Invalid port " << argv[1] << '\n';
-            std::cout << "usage: your name";
-        }
+int Client::getAndSendMessages(){
+    std::string init = "";
+    char aux[MAX_LINE];
+
+    //Inicia conexao com o servidor
+    init.append("CONN ");
+    init.append(Client::user);
+    sendMessage(init);
+    recvMessage();
+    std::cout << "\n" << "$[" << Client::user << "] ";
+    while (std::cin.getline(aux,MAX_LINE)){
+        aux[MAX_LINE-1] = '\0';
+        std::cout << "\n";
+        sendMessage(aux);
+        recvMessage();
+        std::cout << "\n" << "$[" << Client::user << "] ";
     }
-
-    Client client;
-    client.run(argv[1], (int) argv[2], argv[3]);
-
-    return 0;
 }

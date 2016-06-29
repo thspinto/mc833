@@ -23,11 +23,15 @@ public:
     char* user;
 
     bool createConnection();
-    int run(char *lh, int port, char *Client);
-    int getAndsendMessages();
+    int run();
+    int getAndSendMessages();
 
     Client(char *lh, int port, char *user): host(lh), serverPort(port), user(user) {}
     Client() {}
+
+    void sendMessage(std::string message);
+
+    void recvMessage();
 };
 
 

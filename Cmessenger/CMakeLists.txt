@@ -8,5 +8,5 @@ add_executable(CmessengerServer ${SERVER_SOURCE_FILES})
 
 
 project(CmessengerClient)
-set(CLIENT_SOURCE_FILES Client.cpp Client.h)
+set(CLIENT_SOURCE_FILES clientMain.cpp Client.cpp Client.h)
 add_executable(CmessengerClient ${CLIENT_SOURCE_FILES})
