@@ -36,37 +36,66 @@ bool Client::createConnection(){
     return true;
 }
 
-// Evnia mensagem para o servidor
+// Envia mensagem para o servidor
 void Client::sendMessage(std::string message){
     std::string size = std::to_string(message.size());
     std::string msg = size.append(" ").append(message);
     send(socketfd, &msg[0], msg.length(), 0);
-    return;
+    message.clear();
 }
 
 // Recebe mensagem do servidor e exiba na tela
 void Client::recvMessage(){
     std::vector<char> buf(MAX_LINE);
-    recv(socketfd, buf.data(), buf.size(), 0);
+    if (read(socketfd, buf.data(), buf.size()) == 0) {
+        //Server desconectou
+        std::cout << "Encerrada conexao com o servidor";
+        exit(0);
+    }
     std::cout << buf.data();
-    return;
 }
 
-int Client::getAndSendMessages(){
+void Client::connection(){
     std::string init = "";
-    char aux[MAX_LINE];
-
-    //Inicia conexao com o servidor
     init.append("CONN ");
     init.append(Client::user);
     sendMessage(init);
-    recvMessage();
-    std::cout << "\n" << "$[" << Client::user << "] ";
-    while (std::cin.getline(aux,MAX_LINE)){
-        aux[MAX_LINE-1] = '\0';
-        std::cout << "\n";
-        sendMessage(aux);
-        recvMessage();
+}
+
+int Client::getAndSendMessages() {
+    int filefd, nready, n, maxfd;
+    fd_set rset, allset;
+    char aux[MAX_LINE];
+
+    filefd = fileno(stdin);
+    maxfd = filefd;
+    FD_ZERO(&allset);
+    FD_SET(filefd, &allset);
+    FD_SET(socketfd, &allset);
+
+    if (socketfd > maxfd)
+        maxfd = socketfd;
+
+    connection();
+
+    while(1){
+        rset = allset;
+        nready = select(maxfd+1, &rset, NULL, NULL, NULL);
+
+        if (FD_ISSET(filefd, &rset)) {
+            std::cin.getline(aux, MAX_LINE);
+            aux[MAX_LINE - 1] = '\0';
+            std::cout << "\n";
+            sendMessage(aux);
+            if (--nready <= 0) {
+                continue;
+            }
+        }
+
+        if (FD_ISSET(socketfd, &rset)) {
+            recvMessage();
+        }
         std::cout << "\n" << "$[" << Client::user << "] ";
+        std::flush(std::cout);
     }
 }

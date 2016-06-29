@@ -32,6 +32,8 @@ public:
     void sendMessage(std::string message);
 
     void recvMessage();
+
+    void connection();
 };
 
 
