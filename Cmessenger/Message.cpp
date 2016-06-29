@@ -8,18 +8,20 @@ std::map<std::string, Message::Action> Message::actionMap = {
 };
 
 Message::Action Message::parseAction() {
-    int size;
+    int s;
     std::string command = " ";
 
+    Message::buf.push_back('\0');
     std::istringstream stream (Message::buf.data());
-    stream >> size;
+    stream >> s;
     stream >> command;
 
     stream.seekg(1, std::ios_base::cur); //pula um espaço em branco
     Message::size -= stream.tellg();
 
     Message::buf.resize(size);
-    stream.read(&Message::buf[0], size);
+    stream.read(&Message::buf[0], s);
+    Message::buf.push_back('\0');
 
     return Message::actionMap[command];
 }
@@ -35,6 +37,7 @@ std::string Message::parseCommandParameter() {
 
     Message::buf.resize(size);
     stream.read(&Message::buf[0], size);
+    Message::buf.push_back('\0');
 
     return command;
 }
@@ -50,15 +53,16 @@ std::string Message::toString() {
 }
 
 bool Message::sendMessage() {
+    std::string user = "";
     if(origin != NULL){
-        std::string user = "[";
+        user.append("[");
         user.append(origin->user);
         if(groupHeader.length() > 0) {
             user.append("@");
             user.append(groupHeader);
         }
         user.append(">] ");
-        send(dest->socketfd, user.data(), user.length(), 0);
     }
-    send(dest->socketfd, &buf[0], size, 0);
+    user.append(std::string(buf.begin(), buf.end()));
+    send(dest->socketfd, &user[0], user.size(), 0);
 }

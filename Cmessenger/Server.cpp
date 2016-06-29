@@ -43,7 +43,6 @@ void Server::selectLoop() {
     fd_set rset;
     socklen_t clilen;
     struct sockaddr_in	cliaddr;
-    std::vector<char> buf(MAXLINE);
 
     maxfd = listenfd;
     FD_ZERO(&allset);
@@ -83,6 +82,7 @@ void Server::selectLoop() {
 
             sockfd = it->first;
             if (FD_ISSET(sockfd, &rset)) {
+                std::vector<char> buf(MAXLINE);
                 if ((n = read(sockfd, buf.data(), buf.size())) == 0) {
                     //Cliente desconectou
                     Server::closeSocket(sockfd);
@@ -281,7 +281,7 @@ void Server::joing(Message &message) {
     if(!verifyConnectedClient()){
         return;
     };
-    std::string status = ("Groupo não existe\n");
+    std::string status = "Groupo não existe\n";
     std::string groupName = message.parseCommandParameter();
     const std::map<std::string, Group>::iterator &it = groupMap.find(groupName);
     if(it != groupMap.end()) {
