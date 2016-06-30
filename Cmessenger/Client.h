@@ -10,6 +10,7 @@
 #include <ifaddrs.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include "md5.h"
 
 #define MAX_LINE 256
 
@@ -25,15 +26,12 @@ public:
     bool createConnection();
     int run();
     int getAndSendMessages();
+    void sendMessage(std::string message);
+    void recvMessage();
+    void connection();
 
     Client(char *lh, int port, char *user): host(lh), serverPort(port), user(user) {}
     Client() {}
-
-    void sendMessage(std::string message);
-
-    void recvMessage();
-
-    void connection();
 };
 
 

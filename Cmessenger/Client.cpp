@@ -3,15 +3,15 @@
 #include <vector>
 #include "Client.h"
 
-
+// Inicia o client
 int Client::run(){
     if(createConnection()){
         getAndSendMessages();
     }
-
     return 0;
 }
 
+// Cria conexao com o servidor
 bool Client::createConnection(){
     struct sockaddr_in sin;
     struct hostent *hp;
@@ -41,6 +41,13 @@ void Client::sendMessage(std::string message){
     std::string size = std::to_string(message.size());
     std::string msg = size.append(" ").append(message);
     send(socketfd, &msg[0], msg.length(), 0);
+
+    std::size_t conn = message.find("CONN");
+    std::size_t who = message.find("WHO");
+    std::size_t ext = message.find("EXIT");
+    if (conn==-1 && who==-1 && ext==-1) {
+        std::cout << md5(msg).substr(0, 6) << " enviada\n";
+    }
     message.clear();
 }
 
@@ -52,9 +59,11 @@ void Client::recvMessage(){
         std::cout << "Encerrada conexao com o servidor";
         exit(0);
     }
-    std::cout << buf.data();
+    std::cout << '\r' << buf.data();
 }
 
+
+// Envia mensagem de conexao do usuario para o servidor
 void Client::connection(){
     std::string init = "";
     init.append("CONN ");
@@ -62,8 +71,9 @@ void Client::connection(){
     sendMessage(init);
 }
 
+// Le mensagem do usuario, envia para o servidor e exibe retorno do servidor
 int Client::getAndSendMessages() {
-    int filefd, nready, n, maxfd;
+    int filefd, nready, maxfd;
     fd_set rset, allset;
     char aux[MAX_LINE];
 
@@ -95,6 +105,7 @@ int Client::getAndSendMessages() {
         if (FD_ISSET(socketfd, &rset)) {
             recvMessage();
         }
+
         std::cout << "\n" << "$[" << Client::user << "] ";
         std::flush(std::cout);
     }
