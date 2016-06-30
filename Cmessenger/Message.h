@@ -22,6 +22,7 @@ public:
     int expectedSize;
     std::vector<char> buf;
     enum Action {
+        UNWNOWN,
         CONN,
         SEND,
         CREATEG,
@@ -29,7 +30,8 @@ public:
         SENDG,
         WHO,
         SENDF,
-        GETF
+        GETF,
+        EXIT
     };
 
     static std::map<std::string, Action> actionMap;

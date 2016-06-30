@@ -105,6 +105,7 @@ void Server::selectLoop() {
                         incompleteMessageMap[sockfd] = message;
                     } else {
                         incompleteMessageMap.erase(sockfd);
+                        message.id = getMessageId(message);
                         executeCommand(message.parseAction(), message);
                     }
                 }
@@ -164,11 +165,13 @@ void Server::executeCommand(Message::Action command, Message &message) {
             Server::who();
             break;
         case Message::SENDF:
-            Server::sendf();
+            Server::sendf(message);
             break;
         case Message::GETF:
-            Server::getf();
+            Server::getf(message);
             break;
+        default:
+            closeSocket(sockfd);
     }
 
     if(messageQueue.size() > 0) {
@@ -185,13 +188,18 @@ void Server::executeCommand(Message::Action command, Message &message) {
     }
 }
 
-void Server::sendf() {
+void Server::sendf(Message& message) {
+    std::string user = message.parseCommandParameter();
+
+
+    std::string status = "SENDF";
+    sendServerMessage(status);
     //Salva arquivo localentmente
     //Guarda nome do arquivo no mapa idMensagem -> nome arquivo
     //Manda aviso para cliente de destino
 }
 
-void Server::getf() {
+void Server::getf(Message& message) {
     //Cria um fork
     //Pega nome do arquivo no mapa
     //Envia o arquivo
@@ -238,10 +246,9 @@ void Server::who() {
     sendServerMessage(clientList);
 }
 
-std::string Server::getMessageId(std::string destName, Message &message) {
-    std::string messageId = message.origin->user;
-    messageId.append(destName).append(message.toString());
-    return md5(messageId).substr(0, 6);
+std::string Server::getMessageId(Message &message) {
+    std::string m(message.buf.begin(), message.buf.end());
+    return md5(m).substr(0, 6);
 }
 
 void Server::sendg(Message &message) {
@@ -254,7 +261,6 @@ void Server::sendg(Message &message) {
     if(it != groupMap.end()) {
         if(it->second.clients.size() > 1) {
             Group& group = it->second;
-            message.id = getMessageId(groupName, message);
             status.assign(message.id).append(" enfileirada\n");
             User *origin = connectedClientMap[sockfd];
             group.messageCount.push_back(0);
@@ -318,7 +324,7 @@ void Server::send(Message &message) {
     std::string destUser = message.parseCommandParameter();
     message.origin = connectedClientMap[sockfd];
     message.dest = verifyDestClient(destUser);
-    message.id = getMessageId(destUser, message);
+    message.id = getMessageId(message);
 
     std::string status(message.id);
     status.append(" enfileirada\n");
