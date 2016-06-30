@@ -106,7 +106,7 @@ int Client::getAndSendMessages() {
             recvMessage();
         }
 
-        std::cout << "\n" << "$[" << Client::user << "] ";
+        std::cout << "$[" << Client::user << "] ";
         std::flush(std::cout);
     }
 }

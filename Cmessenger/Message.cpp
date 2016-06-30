@@ -63,6 +63,8 @@ bool Message::sendMessage() {
         }
         user.append(">] ");
     }
+    int s = user.size() + size;
     user.append(std::string(buf.begin(), buf.end()));
-    send(dest->socketfd, &user[0], user.size(), 0);
+    std::string m = user.substr(0, s).append("\n");
+    send(dest->socketfd, &m[0], s+1, 0);
 }

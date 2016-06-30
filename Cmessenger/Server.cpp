@@ -204,13 +204,13 @@ void Server::getf(Message& message) {
 
 void Server::sendDeliveryNotification(Message &message) {
     std::string status(message.id);
-    status.append(" entregue\n");
+    status.append(" entregue");
     if(message.origin != NULL) {
         if (message.groupHeader.length() > 0) {
             Group group = groupMap[message.groupHeader];
             int count = --group.messageCount.at(message.groupMessageId);
             if (count == 0) {//Grupo
-                status.assign(message.originalMessageHash).append(" entregue\n");
+                status.assign(message.originalMessageHash).append(" entregue");
                 std::vector<char> statusBuffer(status.begin(), status.end());
                 messageQueue.push_back(Message(NULL, message.origin, statusBuffer));
             }
@@ -243,20 +243,20 @@ void Server::who() {
 
 std::string Server::getMessageId(Message &message) {
     std::string m(message.buf.begin(), message.buf.end());
-    return md5(m).substr(0, 6);
+    return md5(m.substr(0,message.size)).substr(0, 6);
 }
 
 void Server::sendg(Message &message) {
     if(!verifyConnectedClient()){
         return;
     };
-    std::string status = ("Groupo não existe\n");
+    std::string status = ("Grupo não existe");
     std::string groupName = message.parseCommandParameter();
     const std::map<std::string, Group>::iterator &it = groupMap.find(groupName);
     if(it != groupMap.end()) {
         if(it->second.clients.size() > 1) {
             Group& group = it->second;
-            status.assign(message.id).append(" enfileirada\n");
+            status.assign(message.id).append(" enfileirada");
             User *origin = connectedClientMap[sockfd];
             group.messageCount.push_back(0);
             std::set<User *>::iterator clientsIt;
@@ -282,12 +282,12 @@ void Server::joing(Message &message) {
     if(!verifyConnectedClient()){
         return;
     };
-    std::string status = "Groupo não existe\n";
+    std::string status = "Grupo não existe";
     std::string groupName = message.parseCommandParameter();
     const std::map<std::string, Group>::iterator &it = groupMap.find(groupName);
     if(it != groupMap.end()) {
         status = ("Usuário adicionado ao grupo ");
-        status.append(groupName).append("\n");
+        status.append(groupName);
         it->second.clients.insert(connectedClientMap[sockfd]);
     }
 
@@ -299,14 +299,14 @@ void Server::createg(Message &message) {
         return;
     };
 
-    std::string status = ("Groupo já existe\n");
+    std::string status = ("Grupo já existe");
     std::string groupName = message.parseCommandParameter();
     if(groupMap.find(groupName) == groupMap.end()) {
         Group group(groupName);
         group.clients.insert(connectedClientMap[sockfd]);
         groupMap[groupName] = group;
-        status = ("Groupo ");
-        status = status.append(groupName).append(" criado\n");
+        status = ("Grupo ");
+        status = status.append(groupName).append(" criado");
     }
     sendServerMessage(status);
 }
@@ -321,7 +321,7 @@ void Server::send(Message &message) {
     message.dest = verifyDestClient(destUser);
 
     std::string status(message.id);
-    status.append(" enfileirada\n");
+    status.append(" enfileirada");
     if(message.dest != NULL) {
         messageQueue.push_back(message);
         sendServerMessage(status);
@@ -330,7 +330,7 @@ void Server::send(Message &message) {
 
 bool Server::verifyConnectedClient() {
     if(connectedClientMap.find(sockfd)->second == NULL){
-        std::string status = ("Usuário não identificado\n");
+        std::string status = ("Usuário não identificado");
         sendServerMessage(status);
         shutdown(sockfd, SHUT_WR);
         return false;
@@ -340,7 +340,7 @@ bool Server::verifyConnectedClient() {
 
 User* Server::verifyDestClient(std::string destUser) {
     if(clientMap.find(destUser) == clientMap.end()){
-        std::string status = std::string("Usuário de destino não existente\n");
+        std::string status = std::string("Usuário de destino não existente");
         sendServerMessage(status);
         return NULL;
     }
@@ -357,7 +357,7 @@ void Server::sendServerMessage(std::string &status) const {
 void Server::conn(Message &message) {
     std::string user(message.parseCommandParameter());
     std::string status = user;
-    status.append(" conectado\n");
+    status.append(" conectado");
     if(clientMap.find(user) == clientMap.end()){
         /* Novo usuário */
         clientMap[user] = User(user, -1);
@@ -369,7 +369,7 @@ void Server::conn(Message &message) {
         connectedClientMap[sockfd] = &clientMap[user];
     } else {
         /* Usuário com um socket associado já*/
-        status = "Usuário já conectado\n";
+        status = "Usuário já conectado";
     }
     sendServerMessage(status);
 

@@ -12,7 +12,7 @@
 #include <netdb.h>
 #include "md5.h"
 
-#define MAX_LINE 256
+#define MAX_LINE 1024
 
 class Client {
 
