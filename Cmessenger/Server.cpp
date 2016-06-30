@@ -254,7 +254,9 @@ void Server::sendg(Message &message) {
     std::string groupName = message.parseCommandParameter();
     const std::map<std::string, Group>::iterator &it = groupMap.find(groupName);
     if(it != groupMap.end()) {
-        if(it->second.clients.size() > 1) {
+        if(it->second.clients.find(connectedClientMap[sockfd]) == it->second.clients.end()) {
+            status = "Usuário não pertence ao grupo";
+        } else if(it->second.clients.size() > 1) {
             Group& group = it->second;
             status.assign(message.id).append(" enfileirada");
             User *origin = connectedClientMap[sockfd];
@@ -263,6 +265,7 @@ void Server::sendg(Message &message) {
             for (clientsIt = group.clients.begin(); clientsIt != group.clients.end(); clientsIt++) {
                 if ((*clientsIt)->user != origin->user) { //Não envia para a origem
                     Message groupMessage(origin, *clientsIt, message.buf);
+                    groupMessage.size--;
                     groupMessage.originalMessageHash = message.id;
                     groupMessage.groupHeader = groupName;
                     groupMessage.groupMessageId = group.messageCount.size() - 1;
@@ -271,7 +274,7 @@ void Server::sendg(Message &message) {
                 }
             }
         } else {
-            status = ("Grupo vazio\n");
+            status = "Grupo vazio";
         }
     }
 
