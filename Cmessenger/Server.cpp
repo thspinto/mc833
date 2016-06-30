@@ -189,11 +189,6 @@ void Server::executeCommand(Message::Action command, Message &message) {
 }
 
 void Server::sendf(Message& message) {
-    std::string user = message.parseCommandParameter();
-
-
-    std::string status = "SENDF";
-    sendServerMessage(status);
     //Salva arquivo localentmente
     //Guarda nome do arquivo no mapa idMensagem -> nome arquivo
     //Manda aviso para cliente de destino
@@ -324,7 +319,6 @@ void Server::send(Message &message) {
     std::string destUser = message.parseCommandParameter();
     message.origin = connectedClientMap[sockfd];
     message.dest = verifyDestClient(destUser);
-    message.id = getMessageId(message);
 
     std::string status(message.id);
     status.append(" enfileirada\n");

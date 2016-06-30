@@ -22,7 +22,7 @@ public:
     int expectedSize;
     std::vector<char> buf;
     enum Action {
-        UNWNOWN,
+        UNkNOWN,
         CONN,
         SEND,
         CREATEG,
