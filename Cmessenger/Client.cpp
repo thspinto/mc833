@@ -43,9 +43,12 @@ void Client::sendMessage(std::string message){
     send(socketfd, &msg[0], msg.length(), 0);
 
     std::size_t conn = message.find("CONN");
+    std::size_t ctg = message.find("CREATEG");
+    std::size_t jog = message.find("JOING");
     std::size_t who = message.find("WHO");
     std::size_t ext = message.find("EXIT");
-    if (conn==-1 && who==-1 && ext==-1) {
+
+    if (conn==-1 && who==-1 && ext==-1 && ctg==-1 && jog==-1) {
         std::cout << md5(msg).substr(0, 6) << " enviada\n";
     }
     message.clear();
@@ -59,7 +62,7 @@ void Client::recvMessage(){
         std::cout << "Encerrada conexao com o servidor";
         exit(0);
     }
-    std::cout << '\r' << buf.data();
+    std::cout << '\r' << buf.data() << "\n";
 }
 
 
