@@ -121,12 +121,12 @@ class Server {
     /*
      * Requisição de envio de arquivo para outro usuário
      */
-    void sendf();
+    void sendf(Message& message);
 
     /*
      * Entrega aquivo ao cliente
      */
-    void getf();
+    void getf(Message& message);
 
     /*
      * Fecha o socket e remove do mapa de clientes conectados.
@@ -137,10 +137,9 @@ class Server {
      * Calcula o id da mensagem
      *
      * @param menssage: a mensagem
-     * @param destName: nome do destino da mensagem
      * @return: id da mensagem
      */
-    std::string getMessageId(std::string destName, Message& message);
+    std::string getMessageId(Message& message);
 
 public:
     /*
